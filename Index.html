@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Деление двузначных чисел на однозначные числа</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        #question-text {
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #question-number {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        #result-container {
+            margin-top: 20px;
+        }
+
+        .input-field {
+            width: 50px;
+            padding: 5px;
+            margin: 0 5px;
+            font-size: 16px;
+            text-align: center;
+            background-color: yellow; /* Желтый фон */
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            -moz-appearance: textfield; /* Убираем стрелки в Firefox */
+        }
+
+        .input-field::-webkit-outer-spin-button,
+        .input-field::-webkit-inner-spin-button {
+            -webkit-appearance: none; /* Убираем стрелки в Chrome, Safari */
+            margin: 0;
+        }
+
+        #start-container {
+            display: block;
+        }
+
+        #test-container {
+            display: none;
+        }
+
+        #errors-container {
+            display: none;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .error-item {
+            margin-bottom: 30px; /* Увеличиваем вертикальный интервал */
+        }
+
+        .user-answer {
+            position: relative;
+            display: inline-block;
+        }
+
+        .user-answer.incorrect {
+            text-decoration: line-through;
+            text-decoration-color: red; /* Косая линия красного цвета */
+            text-decoration-thickness: 2px; /* Толщина линии */
+        }
+
+        .correct-answer {
+            color: green;
+            font-weight: bold;
+            position: absolute;
+            top: -20px; /* Размещаем правильный ответ над неправильным */
+            left: 0;
+            width: 100%;
+            text-align: center;
+        }
+
+        .example {
+            font-size: 18px;
+            margin-bottom: 20px; /* Увеличиваем интервал между строками */
+        }
+
+        .number-container {
+            display: inline-block;
+            position: relative;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Деление двузначных чисел на однозначные числа</h1>
+        <div id="start-container">
+            <p>Количество заданий: 10</p>
+            <button id="start-button">Начать тест</button>
+        </div>
+        <div id="test-container">
+            <div id="question-container">
+                <p id="question-number"></p>
+                <p id="question-text"></p>
+                <div id="input-container"></div>
+                <button id="next-button" disabled>Следующий пример</button>
+            </div>
+            <div id="result-container" style="display: none;">
+                <h2>Результаты теста</h2>
+                <p id="result-text"></p>
+                <p id="time-text"></p>
+                <button id="view-errors-button" style="display: none;">Просмотр ошибок</button>
+                <button id="restart-button">Начать тест заново</button>
+            </div>
+            <div id="errors-container">
+                <h3>Ошибки:</h3>
+                <div id="errors-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentQuestionIndex = 0;
+        let questions = [];
+        let correctAnswers = 0;
+        let incorrectAnswers = 0;
+        let startTime;
+        let endTime;
+        let userAnswers = []; // Массив для хранения ответов пользователя
+
+        function generateQuestion() {
+            let dividend, divisor, quotient;
+
+            do {
+                divisor = Math.floor(Math.random() * 5) + 3; // от 3 до 7
+                quotient = Math.floor(Math.random() * 19) + 11; // от 11 до 29 (чтобы частное могло быть больше 20)
+                dividend = divisor * quotient;
+            } while (
+                dividend < 20 || dividend > 100 || // Делимое от 20 до 100
+                dividend % 10 === 0 || // Делимое не должно заканчиваться на 0
+                Math.floor(dividend / 10) < (divisor % 10) || // Условие с десятками
+                questions.some(q => q.dividend === dividend && q.divisor === divisor) // Вопросы не должны повторяться
+            );
+
+            return { dividend, divisor, quotient };
+        }
+
+        function generateQuestions() {
+            questions = [];
+            for (let i = 0; i < 10; i++) {
+                questions.push(generateQuestion());
+            }
+        }
+
+        function displayQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const question = questions[currentQuestionIndex];
+                const questionText = document.getElementById('question-text');
+                questionText.innerHTML = `
+                    ${question.dividend} ÷ ${question.divisor} = 
+                    <input type="number" class="input-field" id="tens" placeholder="">
+                    <span>+</span>
+                    <input type="number" class="input-field" id="units" placeholder="">
+                    <span>=</span>
+                    <input type="number" class="input-field" id="quotient" placeholder="">
+                `;
+                document.getElementById('question-number').textContent = `Вопрос ${currentQuestionIndex + 1} из ${questions.length}`;
+                document.getElementById('next-button').disabled = true;
+
+                // Добавляем обработчики событий для новых полей ввода
+                const tensInput = document.getElementById('tens');
+                const unitsInput = document.getElementById('units');
+                const quotientInput = document.getElementById('quotient');
+
+                tensInput.addEventListener('input', checkAnswer);
+                unitsInput.addEventListener('input', checkAnswer);
+                quotientInput.addEventListener('input', () => {
+                    if (quotientInput.value.length === 2) { // Проверяем, что введено две цифры
+                        checkAnswer();
+                    }
+                });
+
+                // Фокус на первое поле
+                tensInput.focus();
+
+                // Привязка нажатия Enter к кнопке "Следующий пример"
+                document.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' && !document.getElementById('next-button').disabled) {
+                        document.getElementById('next-button').click();
+                    }
+                });
+            } else {
+                endTime = new Date(); // Фиксируем время окончания теста
+                const totalTime = (endTime - startTime) / 1000; // Общее время в секундах
+                const averageTime = totalTime / questions.length; // Среднее время на задание
+
+                document.getElementById('question-container').style.display = 'none';
+                document.getElementById('result-container').style.display = 'block';
+                document.getElementById('result-text').textContent = `Правильных ответов: ${correctAnswers}, Неправильных ответов: ${incorrectAnswers}`;
+                document.getElementById('time-text').textContent = `Общее время: ${totalTime.toFixed(2)} сек, Среднее время на задание: ${averageTime.toFixed(2)} сек`;
+
+                // Показываем кнопку "Просмотр ошибок", если есть ошибки
+                if (incorrectAnswers > 0) {
+                    document.getElementById('view-errors-button').style.display = 'block';
+                }
+            }
+        }
+
+        function checkAnswer() {
+            const tens = document.getElementById('tens').value;
+            const units = document.getElementById('units').value;
+            const quotient = document.getElementById('quotient').value;
+
+            // Проверяем, заполнены ли все поля
+            if (tens === '' || units === '' || quotient === '') {
+                document.getElementById('next-button').disabled = true;
+                return;
+            }
+
+            const question = questions[currentQuestionIndex];
+            const correctTens = Math.floor(question.quotient / 10) * 10;
+            const correctUnits = question.quotient % 10;
+
+            // Сохраняем ответ пользователя
+            userAnswers[currentQuestionIndex] = {
+                tens: parseInt(tens, 10),
+                units: parseInt(units, 10),
+                quotient: parseInt(quotient, 10),
+                correctTens,
+                correctUnits,
+                correctQuotient: question.quotient,
+                question: `${question.dividend} ÷ ${question.divisor}`
+            };
+
+            if (parseInt(tens, 10) === correctTens && parseInt(units, 10) === correctUnits && parseInt(quotient, 10) === question.quotient) {
+                correctAnswers++;
+            } else {
+                incorrectAnswers++;
+            }
+
+            // Разблокируем кнопку "Следующий пример" независимо от правильности ответа
+            document.getElementById('next-button').disabled = false;
+        }
+
+        document.getElementById('next-button').addEventListener('click', () => {
+            currentQuestionIndex++;
+            displayQuestion();
+        });
+
+        document.getElementById('start-button').addEventListener('click', () => {
+            startTest();
+        });
+
+        document.getElementById('restart-button').addEventListener('click', () => {
+            location.reload(); // Перезагружаем страницу
+        });
+
+        document.getElementById('view-errors-button').addEventListener('click', () => {
+            const errorsList = document.getElementById('errors-list');
+            errorsList.innerHTML = ''; // Очищаем список ошибок
+
+            userAnswers.forEach((answer, index) => {
+                if (
+                    answer.tens !== answer.correctTens ||
+                    answer.units !== answer.correctUnits ||
+                    answer.quotient !== answer.correctQuotient
+                ) {
+                    const errorItem = document.createElement('div');
+                    errorItem.className = 'error-item';
+
+                    // Формируем строку с примерами
+                    const example = document.createElement('div');
+                    example.className = 'example';
+                    example.innerHTML = `
+                        ${answer.question} = 
+                        <div class="number-container">
+                            <span class="user-answer ${answer.tens !== answer.correctTens ? 'incorrect' : ''}">${answer.tens}</span>
+                            ${answer.tens !== answer.correctTens ? `<span class="correct-answer">${answer.correctTens}</span>` : ''}
+                        </div>
+                        <span>+</span>
+                        <div class="number-container">
+                            <span class="user-answer ${answer.units !== answer.correctUnits ? 'incorrect' : ''}">${answer.units}</span>
+                            ${answer.units !== answer.correctUnits ? `<span class="correct-answer">${answer.correctUnits}</span>` : ''}
+                        </div>
+                        <span>=</span>
+                        <div class="number-container">
+                            <span class="user-answer ${answer.quotient !== answer.correctQuotient ? 'incorrect' : ''}">${answer.quotient}</span>
+                            ${answer.quotient !== answer.correctQuotient ? `<span class="correct-answer">${answer.correctQuotient}</span>` : ''}
+                        </div>
+                    `;
+
+                    errorItem.appendChild(example);
+                    errorsList.appendChild(errorItem);
+                }
+            });
+
+            document.getElementById('errors-container').style.display = 'block';
+        });
+
+        function startTest() {
+            // Сброс всех данных
+            currentQuestionIndex = 0;
+            correctAnswers = 0;
+            incorrectAnswers = 0;
+            userAnswers = [];
+            document.getElementById('start-container').style.display = 'none';
+            document.getElementById('test-container').style.display = 'block';
+            document.getElementById('result-container').style.display = 'none';
+            document.getElementById('errors-container').style.display = 'none';
+            document.getElementById('view-errors-button').style.display = 'none';
+            document.getElementById('errors-list').innerHTML = '';
+            startTime = new Date(); // Фиксируем время начала теста
+            generateQuestions();
+            displayQuestion();
+        }
+    </script>
+</body>
+</html>
